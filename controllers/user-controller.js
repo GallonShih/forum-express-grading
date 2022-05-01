@@ -41,18 +41,58 @@ const userController = {
       User.findByPk(req.params.id, {
         raw: true
       }),
-      Comment.findAndCountAll({
-        include: Restaurant,
-        where: { userId: req.params.id },
-        nest: true,
-        raw: true
+      Restaurant.findAll({
+        include: {
+          model: Comment,
+          where: { userId: req.params.id }
+        }
+      }),
+      Restaurant.findAll({
+        include: [{
+          model: User,
+          as: 'FavoritedUsers',
+          where: { id: req.params.id }
+        }]
+      }),
+      User.findAll({
+        include: [{
+          model: User,
+          as: 'Followers',
+          where: { id: req.params.id }
+        }]
+      }),
+      User.findAll({
+        include: [{
+          model: User,
+          as: 'Followings',
+          where: { id: req.params.id }
+        }]
       })
     ])
-      .then(([user, comments]) => {
+      .then(([user, commentedRestaurants, favoritedRestaurants, followings, followers]) => {
         if (!user) throw new Error("User didn't exist!")
+        const commentedRestaurantsResult = commentedRestaurants
+          .map(restaurant => ({
+            ...restaurant.toJSON()
+          }))
+        const favoritedRestaurantsResult = favoritedRestaurants
+          .map(restaurant => ({
+            ...restaurant.toJSON()
+          }))
+        const followingsResult = followings
+          .map(following => ({
+            ...following.toJSON()
+          }))
+        const followersResult = followers
+          .map(follower => ({
+            ...follower.toJSON()
+          }))
         res.render('users/profile', {
           user,
-          comments
+          commentedRestaurants: commentedRestaurantsResult,
+          favoritedRestaurants: favoritedRestaurantsResult,
+          followings: followingsResult,
+          followers: followersResult
         })
       })
   },
